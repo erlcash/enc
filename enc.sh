@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# enc - encfs CLI manager.
+# enc - EncFS CLI manager.
 # Copyright (C) 2013 Erl Cash <erlcash@codeward.org>
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-_VER="0.1"
+_VER="0.1-1"
 
 # Configuration
 ENCFS_BIN="/usr/bin/encfs"
@@ -71,8 +71,31 @@ function get_stash_size ()
 {
 	als=$1
 	total_b=$(du -bc "$ENC_DIR/.$als" | tail -1 | awk '{ print $1 }')
+
+	if [ $total_b -lt 1024 ]; then
+		size=$total_b
+		unit="B"
+	fi
+
+	# Convert to kB
+	if [ $total_b -gt 1024 ]; then
+		size=$(echo "scale=2; $total_b / 1024" | bc -l)
+		unit="kB"
+	fi
+		
+	# Convert to MB
+	if [ $total_b -gt 1048576 ]; then
+		size=$(echo "scale=2; $total_b / 1024 / 1024" | bc -l)
+		unit="MB"
+	fi
 	
-	echo "$total_b B"
+	# Convert to GB
+	if [ $total_b -gt 1073741824 ]; then
+		size=$(echo "scale=2; $total_b / 1024 / 1024 / 1024" | bc -l)
+		unit="GB"
+	fi
+	
+	echo "$size $unit"
 }
 
 # Check whether stash is set
@@ -186,9 +209,9 @@ if [ $# -eq 0 ]; then
 		is_mounted "$stash"
 		
 		if [ $? -eq 1 ]; then
-			echo -e "\t$stash (size $(get_stash_size "$stash"))"
+			echo -e "\t$stash ($(get_stash_size "$stash"))"
 		else
-			echo -e "\t*$stash (size $(get_stash_size "$stash")) => $(get_mount_point "$stash")"
+			echo -e "\t*$stash ($(get_stash_size "$stash")) => $(get_mount_point "$stash")"
 		fi
 	done
 	
