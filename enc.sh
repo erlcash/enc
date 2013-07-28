@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-_VER="0.1-1"
+_VER="0.1-2"
 
 # Configuration
 ENCFS_BIN="/usr/bin/encfs"
@@ -273,7 +273,7 @@ case "$cmd" in
 			exit 1
 		fi
 
-		rmdir "$ENC_DIR/.$stash"
+		rm -r "$ENC_DIR/.$stash"
 		
 		if [ ! $? -eq 0 ]; then
 			echo "$p: could not delete directory '$ENC_DIR/.$stash'."
@@ -404,7 +404,7 @@ case "$cmd" in
 			umount_stash "$stash"
 			
 			if [ ! $? -eq 0 ]; then
-				echo "$p: could not umount stash '$stash'."
+				echo "$p: could not umount stash '$stash' - is busy."
 				exit 1
 			fi
 			
