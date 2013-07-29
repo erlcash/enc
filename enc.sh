@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-_VER="0.1-2"
+_VER="0.1-3"
 
 # Configuration
 ENCFS_BIN="/usr/bin/encfs"
@@ -158,6 +158,13 @@ function umount_stash ()
 	
 	if [ ! $? -eq 0 ];then
 		return 1
+	fi
+	
+	# Remove mount point if the directory is in $MNT_DIR
+	# Fixme: i should use some regular expression with substitution in order to get
+	# rid of the last slash '/'.
+	if [ "$(dirname "$mnt")" == "$(dirname "$MNT_DIR")/$(basename "$MNT_DIR")" ]; then
+		rmdir "$mnt" 2>&1 > /dev/null
 	fi
 	
 	pull_from_stat_file "$als"
