@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-_VER="0.1-3"
+_VER="0.1-4"
 
 # Configuration
 ENCFS_BIN="/usr/bin/encfs"
@@ -195,6 +195,8 @@ fi
 
 if [ ! -d "$ENC_DIR" ]; then mkdir -p "$ENC_DIR"; fi
 if [ ! -w "$ENC_DIR" ]; then echo "$p: directory '$ENC_DIR' is not writable."; exit 1; fi
+if [ ! -d "$MNT_DIR" ]; then mkdir "$MNT_DIR"; fi
+if [ ! -w "$MNT_DIR" ]; then echo "$p: directory '$MNT_DIR' is not writable."; exit 1; fi
 
 # Check if required binaries are available
 if [ ! -x "$ENCFS_BIN" ]; then echo "$p: encfs '$ENCFS_BIN' is not available."; exit 1; fi
