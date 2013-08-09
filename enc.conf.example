@@ -4,4 +4,4 @@ ENC_DIR="$HOME/.enc"
 
 # Mount directory where decrypted data will be available.
 # This is default value used when mount point is not specified on the command line.
-MNT_DIR="$HOME/enc"
+MNT_DIR="$HOME/stashes"

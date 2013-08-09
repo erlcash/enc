@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-_VER="0.1-4"
+_VER="0.2"
 
 # Configuration
 ENCFS_BIN="/usr/bin/encfs"
@@ -70,7 +70,7 @@ function delete_stat_file ()
 function get_stash_size ()
 {
 	als=$1
-	total_b=$(du -bc "$ENC_DIR/.$als" | tail -1 | awk '{ print $1 }')
+	total_b=$(du -Lbc "$ENC_DIR/.$als" 2> /dev/null | tail -1 | awk '{ print $1 }')
 
 	if [ $total_b -lt 1024 ]; then
 		size=$total_b
@@ -98,13 +98,20 @@ function get_stash_size ()
 	echo "$size $unit"
 }
 
-# Check whether stash is set
-function probe ()
+# Check whether stash exists
+# Return: 0 if exists or 1 otherwise
+function exists ()
 {
 	als=$1
 
-	if [ ! -d "$ENC_DIR/.$als" ]; then
+	if [ ! -d "$ENC_DIR/.$als" ] && [ ! -L "$ENC_DIR/.$als" ]; then
 		return 1
+	fi
+	
+	readlink -se "$ENC_DIR/.$als" 2>&1 > /dev/null
+	
+	if [ ! $? -eq 0 ]; then
+		return 2
 	fi
 	
 	return 0
@@ -204,23 +211,24 @@ if [ ! -x "$ENCFSCTL_BIN" ]; then echo "$p: encfsctl '$ENCFSCTL_BIN' is not avai
 if [ ! -x "$ZIP_BIN" ]; then echo "$p: zip '$ZIP_BIN' is not available."; exit 1; fi
 
 if [ $# -eq 0 ]; then
-	echo -e "$p v$_VER\n\nUsage:\n\t$p <stash> [mount_point]\n\t$p add <stash>\n\t$p psw <stash>\n\t$p del <stash>\n\t$p zip <stash> <output>\n\nStashes:"
+	echo -e "$p v$_VER\n\nUsage:\n\t$p <stash> [mount_point]\n\t$p add <stash> [dir]\n\t$p psw <stash>\n\t$p del <stash>\n\t$p zip <stash> <output>\n\nStashes:"
 	
 	for dir in $(ls -1A "$ENC_DIR");
 	do
 		# Skip files that are not a directory
-		if [ ! -d "$ENC_DIR/$dir" ]; then
+		if [ ! -d "$ENC_DIR/$dir" ] && [ ! -L "$ENC_DIR/$dir" ]; then
 			continue
 		fi
 		
 		stash="${dir/./}"
+		size="$(get_stash_size "$stash")"
 		
 		is_mounted "$stash"
-		
+	
 		if [ $? -eq 1 ]; then
-			echo -e "\t$stash ($(get_stash_size "$stash"))"
+			echo -e "\t$stash ($size)"
 		else
-			echo -e "\t*$stash ($(get_stash_size "$stash")) => $(get_mount_point "$stash")"
+			echo -e "\t*$stash ($size) => $(get_mount_point "$stash")"
 		fi
 	done
 	
@@ -232,6 +240,7 @@ case "$cmd" in
 # Add new stash
 	add )
 		stash=$2
+		dir=$3
 		
 		if [ -z "$stash" ]; then
 			echo "$p: stash is an empty string."
@@ -243,14 +252,25 @@ case "$cmd" in
 			exit 1
 		fi
 		
-		probe "$stash"
+		exists "$stash"
 		
 		if [ $? -eq 0 ]; then
-			echo "$p: stash '$stash' is already in use."
+			echo "$p: stash '$stash' already exists."
 			exit 1
 		fi
 		
-		mkdir "$ENC_DIR/.$stash"
+		# Create a stash directory or symlink pointing at the remote stash directory
+		if [ -z "$dir" ]; then
+			mkdir "$ENC_DIR/.$stash" 2>&1 > /dev/null
+		else		
+			if [ ! -d "$dir" ]; then
+				echo "$p: directory '$dir' not found."
+				exit 1
+			fi
+			
+			dir="$(readlink -f "$dir")"
+			ln -s "$dir" "$ENC_DIR/.$stash" 2>&1 > /dev/null
+		fi
 		
 		if [ ! $? -eq 0 ]; then
 			echo "$p: could not create directory '$ENC_DIR/.$stash'."
@@ -268,7 +288,7 @@ case "$cmd" in
 			exit 1
 		fi
 		
-		probe "$stash"
+		exists "$stash"
 		
 		if [ ! $? -eq 0 ]; then
 			echo "$p: unknown stash '$stash'."
@@ -300,14 +320,16 @@ case "$cmd" in
 			exit 1
 		fi
 		
-		probe "$stash"
+		exists "$stash"
 		
 		if [ ! $? -eq 0 ]; then
 			echo "$p: unknown stash '$stash'."
 			exit 1
 		fi
 		
-		$ENCFSCTL_BIN passwd "$ENC_DIR/.$stash"
+		stash_root_path="$(readlink -e "$ENC_DIR/.$stash")"
+		
+		$ENCFSCTL_BIN passwd "$stash_root_path"
 	;;
 # Zip stash
 	zip )
@@ -319,7 +341,7 @@ case "$cmd" in
 			exit 1
 		fi
 		
-		probe "$stash"
+		exists "$stash"
 		
 		if [ ! $? -eq 0 ]; then
 			echo "$p: unknown stash '$stash'."
@@ -336,6 +358,7 @@ case "$cmd" in
 			exit 1
 		fi
 		
+		# Create temporary directory
 		mkdir "/tmp/$stash" 2>&1 > /dev/null
 		
 		if [ ! $? -eq 0 ]; then
@@ -365,17 +388,21 @@ case "$cmd" in
 		stash=$1
 		mount_point=$2
 		
-		probe "$stash"
+		exists "$stash"
+		rval=$?
 		
-		if [ ! $? -eq 0 ]; then
+		if [ $rval -eq 1 ]; then
 			echo "$p: unknown stash '$stash'."
+			exit 1
+		elif [ $rval -eq 2 ]; then
+			echo "$p: stash '$stash' is not available."
 			exit 1
 		fi
 		
 		if [ -z "$mount_point" ]; then
 			mount_point="$MNT_DIR/$stash"
 			if [ ! -d "$mount_point" ]; then
-				mkdir "$mount_point"
+				mkdir "$mount_point" 2>&1 > /dev/null
 			fi
 		fi
 		
