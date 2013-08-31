@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-_VER="0.2"
+_VER="0.2-1"
 
 # Configuration
 ENCFS_BIN="/usr/bin/encfs"
@@ -211,7 +211,7 @@ if [ ! -x "$ENCFSCTL_BIN" ]; then echo "$p: encfsctl '$ENCFSCTL_BIN' is not avai
 if [ ! -x "$ZIP_BIN" ]; then echo "$p: zip '$ZIP_BIN' is not available."; exit 1; fi
 
 if [ $# -eq 0 ]; then
-	echo -e "$p v$_VER\n\nUsage:\n\t$p <stash> [mount_point]\n\t$p add <stash> [dir]\n\t$p psw <stash>\n\t$p del <stash>\n\t$p zip <stash> <output>\n\nStashes:"
+	echo -e "$p v$_VER\n\nUsage:\n\t$p <stash> [mount_point]\n\t$p add <stash> [dir]\n\t$p psw <stash>\n\t$p del <stash>\n\t$p zip <stash> <output>\n\t$p size <stash>\n\nStashes:"
 	
 	for dir in $(ls -1A "$ENC_DIR");
 	do
@@ -221,14 +221,13 @@ if [ $# -eq 0 ]; then
 		fi
 		
 		stash="${dir/./}"
-		size="$(get_stash_size "$stash")"
 		
 		is_mounted "$stash"
 	
 		if [ $? -eq 1 ]; then
-			echo -e "\t$stash ($size)"
+			echo -e "\t$stash"
 		else
-			echo -e "\t*$stash ($size) => $(get_mount_point "$stash")"
+			echo -e "\t*$stash => $(get_mount_point "$stash")"
 		fi
 	done
 	
@@ -243,7 +242,7 @@ case "$cmd" in
 		dir=$3
 		
 		if [ -z "$stash" ]; then
-			echo "$p: stash is an empty string."
+			echo "$p: stash name not specified."
 			exit 1
 		fi
 		
@@ -284,7 +283,7 @@ case "$cmd" in
 		stash=$2
 		
 		if [ -z "$stash" ]; then
-			echo "$p: stash is an empty string."
+			echo "$p: stash name not specified."
 			exit 1
 		fi
 		
@@ -316,7 +315,7 @@ case "$cmd" in
 		stash=$2
 		
 		if [ -z "$stash" ]; then
-			echo "$p: stash is an empty string."
+			echo "$p: stash name not specified."
 			exit 1
 		fi
 		
@@ -337,7 +336,7 @@ case "$cmd" in
 		output=$3
 		
 		if [ -z "$stash" ]; then
-			echo "$p: stash is an empty string."
+			echo "$p: stash name not specified."
 			exit 1
 		fi
 		
@@ -382,6 +381,24 @@ case "$cmd" in
 		fi
 		
 		echo "$p: archive '$output' created."
+	;;
+# Get size
+	size )
+		stash=$2
+		
+		if [ -z "$stash" ]; then
+			echo "$p: stash name not specified."
+			exit 1
+		fi
+		
+		exists "$stash"
+		
+		if [ ! $? -eq 0 ]; then
+			echo "$p: unknown stash '$stash'."
+			exit 1
+		fi
+	
+		echo "$stash: $(get_stash_size "$stash")"
 	;;
 # Mount stash
 	* )

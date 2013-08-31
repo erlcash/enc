@@ -18,10 +18,11 @@ enc is a simple manager written in bash simplifying work with EncFS encryption s
 
 2. Usage:
 	enc <stash> [mount_point] # Mount the stash
-	enc add <stash> [dir] # Add new stash, optionally set the directory outside the default directory.
-	enc psw <stash> # Change existing password
-	enc del <stash> # Delete the stash
-	enc zip <stash> <output> # Archive (zip) the stash
+	enc add <stash> [dir] # Add new stash identified by name <stash>, optionally set the location of data directory outside the enc directory.
+	enc psw <stash> # Change password for the <stash>
+	enc del <stash> # Delete the <stash>
+	enc zip <stash> <output> # Archive (zip) the <stash>
+	enc size <stash> # Get size of the <stash>
 
 3. Installation:
 Run install.sh script with root privileges or copy the enc.sh manualy into /usr/bin folder.
