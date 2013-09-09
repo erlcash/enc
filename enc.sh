@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-_VER="0.2-1"
+_VER="0.2-2"
 
 # Configuration
 ENCFS_BIN="/usr/bin/encfs"
@@ -301,7 +301,7 @@ case "$cmd" in
 			exit 1
 		fi
 
-		rm -r "$ENC_DIR/.$stash"
+		rm -rf "$ENC_DIR/.$stash"
 		
 		if [ ! $? -eq 0 ]; then
 			echo "$p: could not delete directory '$ENC_DIR/.$stash'."
@@ -333,7 +333,7 @@ case "$cmd" in
 # Zip stash
 	zip )
 		stash=$2
-		output=$3
+		output="$(readlink -m "$3")"
 		
 		if [ -z "$stash" ]; then
 			echo "$p: stash name not specified."
@@ -354,6 +354,16 @@ case "$cmd" in
 		
 		if [ -f "$output" ]; then
 			echo "$p: output file '$output' already exists."
+			exit 1
+		fi
+		
+		if [ ! -d "$(dirname "$output")" ]; then
+			echo "$p: directory '$(dirname "$output")' not found."
+			exit 1
+		fi
+		
+		if [ ! -w "$(dirname "$output")" ]; then
+			echo "$p: directory '$(dirname "$output")' is not writable."
 			exit 1
 		fi
 		
