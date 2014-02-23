@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-_VER="0.2-2"
+_VER="0.2-3"
 
 # Configuration
 ENCFS_BIN="/usr/bin/encfs"
@@ -275,9 +275,7 @@ case "$cmd" in
 			echo "$p: could not create directory '$ENC_DIR/.$stash'."
 			exit 1
 		fi
-		
-		echo "$p: new stash '$stash' added."
-		;;
+	;;
 # Delete stash
 	del )
 		stash=$2
@@ -307,9 +305,7 @@ case "$cmd" in
 			echo "$p: could not delete directory '$ENC_DIR/.$stash'."
 			exit 1
 		fi
-		
-		echo "$p: stash '$stash' deleted."
-		;;
+	;;
 # Change password
 	psw )
 		stash=$2
@@ -389,8 +385,6 @@ case "$cmd" in
 			echo "$p: could not create zip archive '$output'."
 			exit 1
 		fi
-		
-		echo "$p: archive '$output' created."
 	;;
 # Get size
 	size )
@@ -461,8 +455,6 @@ case "$cmd" in
 				echo "$p: could not mount stash '$stash'."
 				exit 1
 			fi
-			
-			echo "$p: stash '$stash' mounted."
 		else
 			umount_stash "$stash"
 			
@@ -470,8 +462,6 @@ case "$cmd" in
 				echo "$p: could not umount stash '$stash' - is busy."
 				exit 1
 			fi
-			
-			echo "$p: stash '$stash' umounted."
 		fi
 		;;
 esac
