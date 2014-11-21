@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-_VER="0.2-3"
+_VER="0.3"
 
 # Configuration
 ENCFS_BIN="/usr/bin/encfs"
@@ -25,46 +25,9 @@ ENCFSCTL_BIN="/usr/bin/encfsctl"
 ZIP_BIN="/usr/bin/zip"
 
 CONFIG="$HOME/.enc.conf"
-STAT_FILE="/tmp/enc-$USER"
 ENC_DIR="$HOME/.enc"
 MNT_DIR="$HOME/enc"
 
-# Create status file
-function create_stat_file ()
-{
-	touch "$STAT_FILE"
-	
-	if [ ! $? -eq 0 ]; then
-		return 1
-	fi
-	
-	chmod 600 "$STAT_FILE"
-	
-	return 0
-}
-
-# Write mounted stash into status file
-function push_into_stat_file ()
-{
-	als=$1
-	mnt=$2
-	
-	echo "$als $mnt" >> "$STAT_FILE"
-}
-
-# Remove umounted stash from status file
-function pull_from_stat_file ()
-{
-	als=$1
-	
-	sed -i '/^'$als' /d' "$STAT_FILE"
-}
-
-# Delete status file
-function delete_stat_file ()
-{
-	rm -f "$STAT_FILE"
-}
 
 # Calculate stash size and print it in human readable format
 function get_stash_size ()
@@ -123,11 +86,7 @@ function is_mounted ()
 {
 	als=$1
 	
-	if [ ! -f "$STAT_FILE" ]; then
-		return 1
-	fi
-	
-	grep -e "^$als " "$STAT_FILE" 2>&1 > /dev/null
+	mount | grep -w -e "$MNT_DIR/$als" 2>&1 > /dev/null
 	
 	return $?
 }
@@ -138,19 +97,11 @@ function mount_stash ()
 	als=$1
 	mnt=$2
 	
-	create_stat_file
-	
-	if [ ! $? -eq 0 ]; then
-		return 1
-	fi
-	
 	$ENCFS_BIN "$ENC_DIR/.$als" "$mnt"
 	
 	if [ ! $? -eq 0 ]; then
 		return 1
 	fi
-	
-	push_into_stat_file "$als" "$mnt"
 	
 	return 0
 }
@@ -174,12 +125,6 @@ function umount_stash ()
 		rmdir "$mnt" 2>&1 > /dev/null
 	fi
 	
-	pull_from_stat_file "$als"
-	
-	if [ ! -s "$STAT_FILE" ]; then
-		delete_stat_file
-	fi
-	
 	return 0
 }
 
@@ -188,7 +133,7 @@ function get_mount_point ()
 {
 	als=$1
 	
-	grep -e "^$als " "$STAT_FILE" 2> /dev/null | awk '{ print $2 }'
+	echo "$MNT_DIR/$als"
 }
 
 p=$(basename $0)
